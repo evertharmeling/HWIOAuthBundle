@@ -17,9 +17,7 @@ use Symfony\Component\Security\Core\Exception\AuthenticationException,
     Symfony\Component\Security\Http\HttpUtils,
     Symfony\Component\HttpFoundation\Request;
 
-use HWI\Bundle\OAuthBundle\OAuth\ResourceOwnerInterface,
-    HWI\Bundle\OAuthBundle\OAuth\Response\PathUserResponse,
-    HWI\Bundle\OAuthBundle\OAuth\OAuth1RequestTokenStorageInterface,
+use HWI\Bundle\OAuthBundle\OAuth\OAuth1RequestTokenStorageInterface,
     HWI\Bundle\OAuthBundle\Security\OAuthUtils;
 
 /**
@@ -193,17 +191,15 @@ class GenericOAuth1ResourceOwner extends AbstractResourceOwner
      */
     protected function httpRequest($url, $content = null, $parameters = array(), $headers = array(), $method = null)
     {
-        $authorization = 'Authorization: OAuth';
-        if (null !== $this->getOption('realm')) {
-            $authorization = 'Authorization: OAuth realm="' . rawurlencode($this->getOption('realm')) . '"';
-        }
-
         foreach ($parameters as $key => $value) {
-            $value = rawurlencode($value);
-            $authorization .= ", $key=\"$value\"";
+            $parameters[$key] = $key . '="' . rawurlencode($value) . '"';
         }
 
-        $headers[] = $authorization;
+        if (!$this->getOption('realm')) {
+            array_unshift($parameters, 'realm="' . rawurlencode($this->getOption('realm')) . '"');
+        }
+
+        $headers[] = 'Authorization: OAuth ' . implode(', ', $parameters);
 
         return parent::httpRequest($url, $content, $headers, $method);
     }
